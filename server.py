@@ -227,6 +227,88 @@ def main():
 
                 new_s.sendall(b"200 OK\nStock sold\n")
 
+            elif parts[0] == "DEPOSIT" and len(parts) == 2:
+
+                if not logged_in:
+                    new_s.sendall(b"You are not logged in. Please log in first\n")
+                    continue
+
+                try:
+                    amount = float(parts[1])
+                except ValueError:
+                    new_s.sendall(b"400 invalid command\n")
+                    continue
+
+                if amount <= 0:
+                    new_s.sendall(b"400 invalid command\nDeposit amount must be positive\n")
+                    continue
+
+                user_id = current_user_id
+
+                with open(client, "r") as f:
+                    user_lines = f.readlines()
+
+                updated_users = []
+                new_balance = 0.0
+
+                for line in user_lines:
+
+                    fields = line.strip().split(",")
+
+                    if int(fields[0]) == user_id:
+                        usd = float(fields[6])
+                        new_balance = usd + amount
+                        fields[6] = f"{new_balance:.2f}"
+                        updated_users.append(",".join(fields) + "\n")
+                    else:
+                        updated_users.append(line)
+
+                with open(client, "w") as f:
+                    f.writelines(updated_users)
+
+                response = f"200 OK\nDeposit successful. New balance ${new_balance:.2f}\n"
+                new_s.sendall(response.encode())
+            
+            elif parts[0] == "LOOKUP" and len(parts) == 2:
+
+                # user must be logged in
+                if not logged_in:
+                    new_s.sendall(b"403 Please login first\n")
+                    continue
+
+                ticker = parts[1].upper()
+                user_id = current_user_id
+
+                with open(stock, "r") as f:
+                    stock_lines = f.readlines()
+
+                matches = []
+
+                for line in stock_lines:
+                    fields = line.strip().split(",")
+
+                    stock_id = fields[0]
+                    symbol = fields[1]
+                    amount = fields[3]
+                    owner_id = int(fields[4])
+
+                    # check ownership AND partial ticker match
+                    if owner_id == user_id and ticker in symbol.upper():
+                        matches.append(f"{stock_id} {symbol} {amount}")
+
+                if matches:
+                    response = "200 OK\n"
+                    response += f"Found {len(matches)} match"
+                    if len(matches) != 1:
+                        response += "es"
+                    response += "\n"
+                    response += "\n".join(matches) + "\n"
+                else:
+                    response = "404 Your search did not match any records.\n"
+
+                new_s.sendall(response.encode())
+                    
+
             #if message recieved is QUIT
             elif parts[0] == "QUIT":
                 new_s.sendall(b"200 OK\nClient quitting\n")
