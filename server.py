@@ -22,7 +22,7 @@ shutdown_event = threading.Event()
 
 
 def ensure_data_files():
-    """Ensure user and stock data files exist and have reasonable defaults."""
+    #Ensure user and stock data files exist and have reasonable defaults.
     os.makedirs(os.path.dirname(os.path.abspath(USERS_FILE)), exist_ok=True)
 
     if not os.path.exists(USERS_FILE):
@@ -60,7 +60,7 @@ def ensure_data_files():
 
 
 def read_users():
-    """Return a list of user dicts from the users file."""
+    #Return a list of user dicts from the users file.
     with file_lock:
         with open(USERS_FILE, "r") as f:
             lines = [l.strip() for l in f.readlines() if l.strip()]
@@ -94,7 +94,7 @@ def write_users(users):
 
 
 def read_stocks():
-    """Return a list of stock dicts from the stocks file."""
+    #Return a list of stock dicts from the stocks file.
     with file_lock:
         with open(STOCKS_FILE, "r") as f:
             lines = [l.strip() for l in f.readlines() if l.strip()]
@@ -136,7 +136,7 @@ def remove_active_session(user_id, addr):
 
 
 def handle_client(conn, addr):
-    """Handle a single client connection."""
+    #Handle a single client connection.
     peer = f"{addr[0]}:{addr[1]}"
     print(f"Accepted connection from {peer}")
 
@@ -161,7 +161,7 @@ def handle_client(conn, addr):
             # LOGIN <UserID> <Password>
             if cmd == "LOGIN":
                 if len(parts) != 3:
-                    conn.sendall(b"400 invalid command\n")
+                    conn.sendall(b"Invalid command\n")
                     continue
 
                 user_id, password = parts[1], parts[2]
@@ -187,7 +187,7 @@ def handle_client(conn, addr):
 
             # All remaining commands require login
             if not logged_in:
-                conn.sendall(b"403 Please login first\n")
+                conn.sendall(b"Please log in first\n")
                 continue
 
             # LOGOUT
@@ -199,7 +199,7 @@ def handle_client(conn, addr):
             # WHO (root only)
             if cmd == "WHO":
                 if current_user["username"].lower() != "root":
-                    conn.sendall(b"403 Please login as root to use WHO\n")
+                    conn.sendall(b"Please log in first\n")
                     continue
 
                 with active_sessions_lock:
@@ -247,10 +247,10 @@ def handle_client(conn, addr):
                 try:
                     amount = float(parts[1])
                 except ValueError:
-                    conn.sendall(b"400 invalid command\n")
+                    conn.sendall(b"Invalid command\n")
                     continue
                 if amount <= 0:
-                    conn.sendall(b"400 invalid command\nDeposit amount must be positive\n")
+                    conn.sendall(b"Invalid command\nDeposit amount must be positive\n")
                     continue
 
                 users = read_users()
@@ -293,11 +293,11 @@ def handle_client(conn, addr):
                     amount = float(parts[2])
                     price = float(parts[3])
                 except ValueError:
-                    conn.sendall(b"400 invalid command\n")
+                    conn.sendall(b"Invalid command\n")
                     continue
 
                 if amount <= 0 or price <= 0:
-                    conn.sendall(b"400 invalid command\n")
+                    conn.sendall(b"Invalid command\n")
                     continue
 
                 cost = amount * price
@@ -305,13 +305,13 @@ def handle_client(conn, addr):
                 for u in users:
                     if u["id"] == current_user["id"]:
                         if u["balance"] < cost:
-                            conn.sendall(b"400 invalid command\nNot enough USD\n")
+                            conn.sendall(b"Invalid command\nNot enough USD\n")
                             break
                         u["balance"] -= cost
                         current_user = u
                         break
                 else:
-                    conn.sendall(b"400 invalid command\nUser not found\n")
+                    conn.sendall(b"Invalid command\nUser not found\n")
                     continue
 
                 write_users(users)
@@ -339,11 +339,11 @@ def handle_client(conn, addr):
                     price = float(parts[2])
                     amount = float(parts[3])
                 except ValueError:
-                    conn.sendall(b"400 invalid command\n")
+                    conn.sendall(b"Invalid command\n")
                     continue
 
                 if amount <= 0 or price <= 0:
-                    conn.sendall(b"400 invalid command\n")
+                    conn.sendall(b"Invalid command\n")
                     continue
 
                 stocks = read_stocks()
@@ -357,7 +357,7 @@ def handle_client(conn, addr):
                         break
 
                 if not sold:
-                    conn.sendall(b"400 invalid command\nNot enough stock\n")
+                    conn.sendall(b"Invalid command\nNot enough stock\n")
                     continue
 
                 write_stocks(stocks)
@@ -376,14 +376,14 @@ def handle_client(conn, addr):
             # SHUTDOWN
             if cmd == "SHUTDOWN":
                 if current_user["username"].lower() != "root":
-                    conn.sendall(b"403 Please login as root to shutdown\n")
+                    conn.sendall(b"Please log in first\n")
                     continue
 
                 conn.sendall(b"200 OK\nServer shutting down\n")
                 shutdown_event.set()
                 break
 
-            conn.sendall(b"400 invalid command\n")
+            conn.sendall(b"Invalid command\n")
 
     finally:
         if logged_in and current_user is not None:
