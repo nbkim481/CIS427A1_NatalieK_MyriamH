@@ -38,10 +38,10 @@ def ensure_data_files():
 
         if len(lines) < 4:
             defaults = [
-                ("root@gmail.com", "Root", "User", "root", "Root01", 100.0),
-                ("mary@gmail.com", "Mary", "User", "mary", "Mary01", 100.0),
-                ("john@gmail.com", "John", "User", "john", "John01", 100.0),
-                ("moe@gmail.com", "Moe", "User", "moe", "Moe01", 100.0),
+                ("root@gmail.com", "root", "User", "root", "root01", 100.0),
+                ("mary@gmail.com", "mary", "User", "mary", "mary01", 100.0),
+                ("john@gmail.com", "john", "User", "john", "john01", 100.0),
+                ("moe@gmail.com", "moe", "User", "moe", "moe01", 100.0),
             ]
 
             with open(USERS_FILE, "a") as f:
